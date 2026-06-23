@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum AchievementStatus {
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum AchievementType {
+  VIAGEM
+  EDUCACAO
+  PATRIMONIO
+  OUTRO
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        @unique
+  password     String
+  avatar       String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+  achievements Achievement[]
+  invoices     Invoice[]
+}
+
+model Category {
+  id           Int           @id @default(autoincrement())
+  name         String
+  icon         String?
+  color        String?
+  type         TransactionType
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+  budgets      Budget[]
+}
+
+model Transaction {
+  id          Int             @id @default(autoincrement())
+  type        TransactionType
+  amount      Decimal         @db.Decimal(10, 2)
+  description String
+  date        DateTime        @default(now())
+  categoryId  Int
+  category    Category        @relation(fields: [categoryId], references: [id])
+  invoiceId   Int?
+  invoice     Invoice?        @relation(fields: [invoiceId], references: [id])
+  userId      Int
+  user        User            @relation(fields: [userId], references: [id])
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([date])
+  @@index([userId])
+  @@index([categoryId])
+}
+
+model Achievement {
+  id                Int               @id @default(autoincrement())
+  title             String
+  description       String?
+  targetAmount      Decimal           @db.Decimal(10, 2)
+  currentAmount     Decimal           @db.Decimal(10, 2) @default(0)
+  deadline          DateTime?
+  status            AchievementStatus @default(IN_PROGRESS)
+  type              AchievementType
+  imageUrl          String?
+  linkedCategoryIds String?
+  userId            Int
+  user              User              @relation(fields: [userId], references: [id])
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Invoice {
+  id          Int           @id @default(autoincrement())
+  fileName    String
+  filePath    String
+  ocrData     String?
+  totalAmount Decimal?      @db.Decimal(10, 2)
+  storeName   String?
+  issueDate   DateTime?
+  processed   Boolean       @default(false)
+  userId      Int
+  user        User          @relation(fields: [userId], references: [id])
+  transactions Transaction[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([userId])
+}
+
+model Budget {
+  id          Int           @id @default(autoincrement())
+  month       Int
+  year        Int
+  limitAmount Decimal       @db.Decimal(10, 2)
+  spentAmount Decimal       @db.Decimal(10, 2) @default(0)
+  categoryId  Int
+  category    Category      @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([month, year, categoryId])
+  @@index([categoryId])
+}
