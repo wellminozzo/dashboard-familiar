@@ -3,6 +3,7 @@ import { authRouter } from "./auth.routes"
 import { categoryRouter } from "./category.routes"
 import { transactionRouter } from "./transaction.routes"
 import { achievementRouter } from "./achievement.routes"
+import { budgetRouter } from "./budget.routes"
 import { invoiceRouter } from "./invoice.routes"
 import { dashboardRouter } from "./dashboard.routes"
 
@@ -16,6 +17,7 @@ router.use("/auth", authRouter)
 router.use("/categories", categoryRouter)
 router.use("/transactions", transactionRouter)
 router.use("/achievements", achievementRouter)
+router.use("/budgets", budgetRouter)
 router.use("/invoices", invoiceRouter)
 router.use("/dashboard", dashboardRouter)
 

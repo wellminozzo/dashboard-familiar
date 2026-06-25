@@ -4,6 +4,7 @@ import { prisma } from "../config/prisma"
 import { config } from "../config"
 import { AppError } from "../middlewares/error.middleware"
 import type { RegisterInput, LoginInput } from "../validators/auth.schema"
+import type { UpdateProfileInput, ChangePasswordInput } from "../validators/profile.schema"
 
 export class AuthService {
   async register(data: RegisterInput) {
@@ -49,6 +50,47 @@ export class AuthService {
       throw new AppError("Usuário não encontrado", 404)
     }
     return user
+  }
+
+  async updateProfile(userId: number, data: UpdateProfileInput) {
+    if (data.email) {
+      const existing = await prisma.user.findFirst({
+        where: { email: data.email, id: { not: userId } },
+      })
+      if (existing) {
+        throw new AppError("Email já está em uso", 409)
+      }
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: data.name,
+        email: data.email,
+        avatar: data.avatar,
+      },
+      select: { id: true, name: true, email: true, avatar: true },
+    })
+
+    return user
+  }
+
+  async changePassword(userId: number, data: ChangePasswordInput) {
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user) {
+      throw new AppError("Usuário não encontrado", 404)
+    }
+
+    const valid = await bcrypt.compare(data.currentPassword, user.password)
+    if (!valid) {
+      throw new AppError("Senha atual incorreta", 401)
+    }
+
+    const hashedPassword = await bcrypt.hash(data.newPassword, 10)
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    })
   }
 
   private generateToken(userId: number): string {

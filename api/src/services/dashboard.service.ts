@@ -23,13 +23,50 @@ export class DashboardService {
     const monthlyHistory = await this.getMonthlyHistory(userId, 6)
     const expensesByCategory = await this.getExpensesByCategory(userId, m, y)
     const achievements = await this.getAchievementProgress(userId)
+    const budgets = await this.getBudgetProgress(userId, m, y)
 
     return {
       currentMonth,
       monthlyHistory,
       expensesByCategory,
       achievements,
+      budgets,
     }
+  }
+
+  private async getBudgetProgress(userId: number, month: number, year: number) {
+    const budgets = await prisma.budget.findMany({
+      where: { userId, month, year },
+      include: { category: true },
+    })
+
+    return Promise.all(budgets.map(async (b) => {
+      const startDate = new Date(year, month - 1, 1)
+      const endDate = new Date(year, month, 0, 23, 59, 59, 999)
+
+      const spent = await prisma.transaction.aggregate({
+        where: {
+          userId,
+          categoryId: b.categoryId,
+          type: TransactionType.EXPENSE,
+          date: { gte: startDate, lte: endDate },
+        },
+        _sum: { amount: true },
+      })
+
+      const spentAmount = Number(spent._sum.amount || 0)
+      const limitAmount = Number(b.limitAmount)
+
+      return {
+        id: b.id,
+        categoryId: b.categoryId,
+        categoryName: b.category.name,
+        categoryColor: b.category.color,
+        limitAmount,
+        spentAmount,
+        progress: limitAmount > 0 ? Math.min(100, Math.round((spentAmount / limitAmount) * 100)) : 0,
+      }
+    }))
   }
 
   private async getMonthSummary(userId: number, month: number, year: number) {

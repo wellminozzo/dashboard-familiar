@@ -31,9 +31,20 @@ export interface AchievementProgress {
   imageUrl: string | null
 }
 
+export interface BudgetProgress {
+  id: number
+  categoryId: number
+  categoryName: string
+  categoryColor: string | null
+  limitAmount: number
+  spentAmount: number
+  progress: number
+}
+
 export interface DashboardData {
   currentMonth: MonthSummary
   monthlyHistory: MonthlyHistoryItem[]
   expensesByCategory: CategoryExpense[]
   achievements: AchievementProgress[]
+  budgets: BudgetProgress[]
 }

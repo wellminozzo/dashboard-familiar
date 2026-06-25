@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from "express"
 import { AuthService } from "../services/auth.service"
 import { registerSchema, loginSchema } from "../validators/auth.schema"
+import { updateProfileSchema, changePasswordSchema } from "../validators/profile.schema"
 import { AppError } from "../middlewares/error.middleware"
+import { ZodError } from "zod"
 
 const authService = new AuthService()
 
@@ -40,6 +42,36 @@ export class AuthController {
       const user = await authService.getProfile(userId)
       res.json(user)
     } catch (error) {
+      next(error)
+    }
+  }
+
+  async updateProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId
+      const data = updateProfileSchema.parse(req.body)
+      const user = await authService.updateProfile(userId, data)
+      res.json(user)
+    } catch (error) {
+      if (error instanceof ZodError) {
+        next(new AppError(error.errors.map(e => e.message).join("; "), 400))
+        return
+      }
+      next(error)
+    }
+  }
+
+  async changePassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId
+      const data = changePasswordSchema.parse(req.body)
+      await authService.changePassword(userId, data)
+      res.json({ message: "Senha alterada com sucesso" })
+    } catch (error) {
+      if (error instanceof ZodError) {
+        next(new AppError(error.errors.map(e => e.message).join("; "), 400))
+        return
+      }
       next(error)
     }
   }

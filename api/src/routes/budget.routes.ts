@@ -1,0 +1,16 @@
+import { Router } from "express"
+import { BudgetController } from "../controllers/budget.controller"
+import { authMiddleware } from "../middlewares/auth.middleware"
+
+const router = Router()
+const controller = new BudgetController()
+
+router.use(authMiddleware)
+
+router.get("/", controller.list.bind(controller))
+router.get("/:id", controller.getById.bind(controller))
+router.post("/", controller.create.bind(controller))
+router.put("/:id", controller.update.bind(controller))
+router.delete("/:id", controller.delete.bind(controller))
+
+export { router as budgetRouter }
